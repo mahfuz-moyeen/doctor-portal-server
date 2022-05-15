@@ -21,6 +21,21 @@ async function run() {
         await client.connect();
         const appointmentsCollection = client.db("doctor_portal").collection("appointments");
         const bookingCollection = client.db("doctor_portal").collection("booking");
+        const userCollection = client.db("doctor_portal").collection("user");
+
+
+        //add & update user
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: user
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
 
         //get appointments
         app.get('/appointments', async (req, res) => {
@@ -36,17 +51,17 @@ async function run() {
             // get all appointments data
             const appointments = await appointmentsCollection.find().toArray()
             //get all booking data
-            const query = {date:date}
+            const query = { date: date }
             const booking = await bookingCollection.find(query).toArray()
 
-            appointments.forEach(appointment =>{
+            appointments.forEach(appointment => {
                 //find booking for that appointments
                 const appointmentBooking = booking.filter(book => book.bookingName === appointment.name)
                 // select time for the appointment
                 const bookingTime = appointmentBooking.map(book => book.time);
                 // select those slots are not in booking time
                 const available = appointment.slots.filter(slot => !bookingTime.includes(slot));
-                 appointment.slots = available;
+                appointment.slots = available;
             })
             res.send(appointments);
         })
@@ -67,7 +82,7 @@ async function run() {
         //get booking
         app.get('/bookings', async (req, res) => {
             const email = req.query.email;
-            const query = {email:email}
+            const query = { email: email }
             const cursor = bookingCollection.find(query);
             const booking = await cursor.toArray();
             res.send(booking);
