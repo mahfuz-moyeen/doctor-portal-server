@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const app = express();
@@ -37,7 +37,18 @@ async function run() {
         const appointmentsCollection = client.db("doctor_portal").collection("appointments");
         const bookingCollection = client.db("doctor_portal").collection("booking");
         const userCollection = client.db("doctor_portal").collection("user");
+        const doctorCollection = client.db("doctor_portal").collection("doctor");
 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+                next();
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' });
+            }
+        }
 
         //add & update user
         app.put('/user/:email', async (req, res) => {
@@ -61,21 +72,14 @@ async function run() {
         })
 
         //make admin
-        app.put('/user/admin/:email', verifyToken, async (req, res) => {
+        app.put('/user/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.params.email;
-            const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({ email: requester });
-            if (requesterAccount.role === 'admin') {
-                const filter = { email: email };
-                const updateDoc = {
-                    $set: { role: 'admin' },
-                };
-                const result = await userCollection.updateOne(filter, updateDoc);
-                res.send(result);
-            }
-            else {
-                res.status(403).send({ message: 'forbidden' });
-            }
+            const filter = { email: email };
+            const updateDoc = {
+                $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
         })
 
         //get admin
@@ -90,7 +94,7 @@ async function run() {
         //get appointments
         app.get('/appointments', async (req, res) => {
             const query = {}
-            const cursor = appointmentsCollection.find(query).project({ name: 1 });
+            const cursor = appointmentsCollection.find(query).project({ name: 1 })
             const appointments = await cursor.toArray();
             res.send(appointments);
         })
@@ -143,6 +147,28 @@ async function run() {
             else {
                 return res.status(403).send({ message: 'Forbidden access' })
             }
+        })
+
+        //add doctor
+        app.post('/doctor', verifyToken, verifyAdmin, async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorCollection.insertOne(doctor);
+            res.send(result)
+        })
+
+        //get manage doctor
+        app.get('/doctors', verifyToken, verifyAdmin, async (req, res) => {
+            const result = await doctorCollection.find().toArray()
+            res.send(result)
+        })
+
+        //delete  doctor
+        app.delete('/doctor/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id
+            console.log(id);
+            const filter = { _id: ObjectId(id) }
+            const result = await doctorCollection.deleteOne(filter)
+            res.send(result)
         })
 
     }
