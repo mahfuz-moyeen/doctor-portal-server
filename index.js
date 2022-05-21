@@ -149,6 +149,16 @@ async function run() {
             }
         })
 
+        //get booking
+        app.get('/payment/:id',verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const payment = await bookingCollection.findOne(query);
+            res.send(payment)
+        })
+
+
+
         //add doctor
         app.post('/doctor', verifyToken, verifyAdmin, async (req, res) => {
             const doctor = req.body;
