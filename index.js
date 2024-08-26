@@ -8,15 +8,16 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 8000;
 
-app.use(cors({
-    origin: 'https://doctor-portal-29178.web.app', // Replace with your frontend domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Specify allowed HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
-  }));
+app.use(
+  cors({
+    origin: ["https://doctor-portal-29178.web.app", "http://localhost:3000"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-  
 // app.use(cors());
-app.options('*', cors()); // Enable preflight for all routes
+app.options("*", cors()); // Enable preflight for all routes
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.f4jstaa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
